@@ -288,8 +288,7 @@ def play_random(i):
 
 
 
- #-16.662
-#play(NochMal())
+play(NochMal())
 
 
 
