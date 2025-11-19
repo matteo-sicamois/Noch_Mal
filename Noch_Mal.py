@@ -4,11 +4,11 @@
 # You then have to choose 2 of the dices and select the corresponding amount of squares of that color.
 # The squares have to be either in the highlighted column or adjacent to an already occupied square.
 # They all have to touch each others (no diagonals)
-
+import copy
 # Completing a column gives a determinate number of points (see score_table of NochMal class)
 # Completing a color gives 5 points
-# Each non-collected star (the rhombuses) removes 2 points at the end of the game.
-# The game ends after 30 rounds
+# Each non-collected star (the rhombuses) removes 2 points at the end of the self.
+# The self ends after 30 rounds
 
 #To select the squares write their coordinates separated by a comma. Separate each square with a space.
 
@@ -16,9 +16,9 @@
 # numbers: [2,5] colors: [red, yellow]
 #Enter move: 5,7 5,8
 
-import copy
 import random
 import itertools
+from copy import deepcopy
 
 class colors:
     PINK = TWO = '\033[95m'
@@ -29,15 +29,6 @@ class colors:
     NORMAL = '\033[0m'
 
 color_list = ['\033[0m','\033[92m','\033[95m','\033[91m','\033[94m','\033[93m']
-
-class Node:
-    def __init__(self, value):
-        self.value = value
-        self.children = []
-
-def print_board_debug(board):
-    for row in board:
-        print(*row, sep=' ')
 
 def visualize_move(board,move):
     print("  ", end="")
@@ -67,7 +58,7 @@ def visualize_move(board,move):
 class NochMal:
     def __init__(self):
         #              A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
-        self.board = [[1, 1, 1, 5, 5, 5, 5, 1.0, 4, 4, 4, 2.0, 5, 5, 5],
+        self.board = [[1, 1, 1, 5, 5, 5, 5, 1.0, 4, 4, 4, 2.0, 5, 5, 1],
                       [2, 1, 5, 1, 5, 5, 2, 2, 3, 4, 4, 2, 2, 1, 1],
                       [4.0, 1, 3, 1, 1, 1, 1.0, 3, 3, 3, 5, 5, 2, 1, 1],
                       [4, 3, 3, 2, 2, 2, 4, 4, 1, 1, 5, 5, 2, 3.0, 4],
@@ -76,6 +67,8 @@ class NochMal:
                       [5, 5, 4, 4, 4, 4, 3, 5, 5, 1, 1, 1, 1.0, 2, 2]]
                       #Green = 1 Pink = 2 Red = 3 Blue = 4 Yellow = 5
         #              A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+        self.hight_board = len(self.board)
+        self.width_board = len(self.board[0])
         self.turn = 0
         self.score = 0
         self.color_dices = []
@@ -100,6 +93,10 @@ class NochMal:
         self.num_dices.append(random.randint(1, 5))
         self.num_dices.append(random.randint(1, 5))
 
+    @staticmethod
+    def copy_board(board):
+        return [row.copy() for row in board]
+
     def get_possible_moves(self):
         possible_moves = set()
         possible_moves.add(frozenset())
@@ -114,13 +111,6 @@ class NochMal:
                 except IndexError: pass
             return False
 
-        def get_move_notation(board,target):
-            move = []
-            for i_row, row in enumerate(board):
-                for i_col, item in enumerate(row):
-                    if item == target: move.append((i_row,i_col))
-            return frozenset(move)
-
         def find_start(board):
             start = []
             for i_row,row in enumerate(board):
@@ -134,89 +124,46 @@ class NochMal:
                             start.append((i_row, i_col))
             return start
 
-        def build_tree(board,max_depth, current_depth=0):
-            node = Node(board)
-            if current_depth == max_depth:
-                possible_moves.add(get_move_notation(board,-1))
-                return node
-            row = 0
-            while row < len(board):
-                col = 0
-                while col < len(board[0]):
-                    if board[row][col] == color and has_neighbor(board, row, col, -1):
-                        board_copy = copy.deepcopy(board)
-                        board_copy[row][col] = -1
-                        child_node = build_tree(board_copy, max_depth, current_depth + 1)
-                        node.children.append(child_node)
-                    col += 1
-                row += 1
-            return node
+        def build_stack(start:list):
+            def elaborate(move):
+                if len(move) == number:
+                    return move
+                squares = set(itertools.chain(*[
+                    [(min(a[0] + 1, self.hight_board - 1), a[1]), (max(a[0] - 1, 0), a[1]),
+                 (a[0], min(a[1] + 1, self.width_board - 1)), (a[0], max(a[1] - 1, 0))] for a in move])) - set(move)
+                squares = [square for square in squares if self.board[square[0]][square[1]] == color]
+                for square in squares:
+                    stack.append(move+[square])
+                return None
 
-        def visualize_tree(node, indent_level=0): #stolen
-            """
-            Recursively prints a simple visualization of the game tree.
-            """
-            # 1. Create indentation strings
-            # The 'tree_indent' is for the "Node" line
-            # The 'board_indent' is for the board lines, indented one level further
-            tree_indent = "  " * indent_level
-            board_indent = "  " * (indent_level + 1)
-
-            # 2. Print this node's information
-            if indent_level > 0:
-                print(f"{tree_indent}└── Node (Depth {indent_level})")
-            else:
-                print(f"Root Node (Depth 0)")
-
-            # 3. Print this node's board, nicely formatted
-            if not node.value:
-                print(f"{board_indent}[Empty Board]")
-            else:
-                # Find max width for cell alignment (e.g., -1 vs 0)
-                try:
-                    # Handle potential empty boards or non-number data
-                    max_w = max(len(str(cell)) for row in node.value for cell in row)
-                    if max_w == 0: max_w = 1
-                except (ValueError, TypeError):
-                    max_w = 1  # Default width
-
-                for row in node.value:
-                    # Format each cell to be the same width (rjust)
-                    formatted_row = [str(cell).rjust(max_w) for cell in row]
-                    print(f"{board_indent}| {' '.join(formatted_row)} |")
-
-            # 4. Recurse for all children
-            for child in node.children:
-                visualize_tree(child, indent_level + 1) #s
+            stack = [start]
+            while stack:
+                move = stack.pop(-1)
+                if elaborate(move):
+                    possible_moves.add(frozenset(move))
 
         for color in  self.color_dices:
             for number in self.num_dices:
                 for start in find_start(self.board):
-                    board_copy = copy.deepcopy(self.board)
-                    board_copy[start[0]][start[1]] = -1
-                    tree= build_tree(board_copy,number-1,0)
-                    #visualize_tree(root,0)
+                    build_stack([start])
 
         return possible_moves
 
-    def make_move(self, move):#[(5,0),(6,0),(5,1)]
+    def make_move(self, move):
         for square in move:
             self.board[square[0]][square[1]] = 0
 
     def update_state(self):
         for color in range(1,6):
-            if color not in list(itertools.chain.from_iterable(self.board)) + self.colors_done:
+            if color not in list(itertools.chain(*self.board))+ self.colors_done:
                 self.colors_done.append(color)
         for n,column in enumerate(zip(*self.board)):
-            if column.count(0) == len(column) and n not in self.columns_done:
+            if sum(column) == 0 and n not in self.columns_done:
                 self.columns_done.append(n)
         if len(self.colors_done) == 2:
             self.is_game_over = True
         if self.turn == self.total_rounds:
             self.is_game_over = True
-
-    def get_game_state(self):
-        pass
 
     def is_game_over(self):
         return self.is_game_over
@@ -231,7 +178,7 @@ class NochMal:
 
     def print_board(self):
         print("  ", end="")
-        for i in range(len(self.board[0])):
+        for i in range(self.width_board):
             if i in [self.start_column,self.start_column+1]: print(" ", end="")
             print(f"{i:^2}", end=' ')
         print()
@@ -255,62 +202,108 @@ class NochMal:
                 print(f" {colors.NORMAL}",end='')
             print()
 
-def play(game):
+class PlayerClass():
+    def __init__(self):
+        self.game = NochMal()
+        self.possible_moves = self.game.get_possible_moves()
+        self.strategy = None
 
-    def format_move(move):
-        return frozenset([(int(m.split(",")[0]), int(m.split(",")[1])) for m in move.split()])
+    def set_strategy(self, strategy):
+        self.strategy = strategy
 
-    while not game.is_game_over:
-        game.print_board()
-        print("numbers: ", game.num_dices)
+    def random_move(self):
+        all = self.possible_moves
+        if len(all) == 1:
+            return all.pop()
+        return random.choice([move for move in list(all) if move])
+
+    def check_star(self):
+        all_moves = list(self.possible_moves)
+        star = sorted([move for move in all_moves if [square for square in move if type(self.game.board[square[0]][square[1]]) == float]], reverse=True)
+        if len(star) != 0:
+            return star[0]
+        return random.choice(all_moves)
+
+    def check_columns(self):
+        all_moves = list(self.possible_moves)
+        star = sorted(
+            [move for move in all_moves if
+             [square for square in move if type(self.game.board[square[0]][square[1]]) == float]],
+            reverse=True)
+        if len(star) != 0:
+            all_moves = star
+        b = self.game.copy_board(self.game.board)
+        scores = {}
+        for move in all_moves:
+            for square in move:
+                self.game.board[square[0]][square[1]] = 0
+            scores[sum([sum(([bool(val) for val in col]))**0.01 for col in zip(*self.game.board)])] = move
+            self.game.board = deepcopy(b)
+        return scores[min(scores.keys())]
+
+    def user_input(self):
+        def format_move(move):
+            return frozenset([(int(m.split(",")[0]), int(m.split(",")[1])) for m in move.split()])
+        move = format_move(input("Enter move: "))
+        while move not in self.possible_moves:
+             move = format_move(input("Move not valid, enter move: "))
+        return move
+
+def play_and_print(player):
+    while not player.game.is_game_over:
+        player.game.print_board()
+        print("numbers: ", player.game.num_dices)
         print("colors: ", end='')
-        for c in game.color_dices:
+        for c in player.game.color_dices:
             print(f"{color_list[c]}██", end=' ')
         print(color_list[0])
-        move = format_move(input("Enter move: "))
-        while move not in game.get_possible_moves():
-            move = format_move(input("Move not valid, enter move: "))
-        game.make_move(move)
-        game.turn += 1
-        game.update_state()
-        game.roll_dices()
-    game.print_board()
+        move = player.strategy()
+        if player.strategy != player.user_input:
+            print(f"possible moves:{[list(move) for move in player.possible_moves]}\nmove :{[square for square in move]}")
+        player.game.make_move(move)
+        player.game.turn += 1
+        player.game.update_state()
+        player.game.roll_dices()
+        player.possible_moves = player.game.get_possible_moves()
+    player.game.print_board()
     print("Game Over")
-    print(f"Score: {game.get_game_score()}")
-    print(f"Colors: {game.colors_done} Columns {game.columns_done}")
+    print(f"Score: {player.game.get_game_score()}")
+    print(f"Colors: {player.game.colors_done} Columns {player.game.columns_done}")
+    return player.game.get_game_score()
 
-def computer_player(game):
-    while not game.is_game_over:
-        game.make_move(check_star(game))
-        game.turn += 1
-        game.update_state()
-        game.roll_dices()
-    return game.get_game_score()
+def play_no_print(player):
+    while not player.game.is_game_over:
+        player.game.make_move(player.strategy())
+        player.game.turn += 1
+        player.game.update_state()
+        player.game.roll_dices()
+        player.possible_moves = player.game.get_possible_moves()
+    return player.game.get_game_score()
 
-def random_move(game):
-    return random.choice(list((game.get_possible_moves())))
-
-def check_star(game):
-    for move in game.get_possible_moves():
-        for square in move:
-            if type(game.board[square[0]][square[1]]) == float:
-                return move
-    return random.choice(list((game.get_possible_moves())))
-
-def play_random(i):
+def play_repeat(i, player):
     total_score = 0
-    for _ in range(i):
-        game = NochMal()
-        total_score += computer_player(game)
-    return total_score/i
+    for instance in range(i):
+        player.game = NochMal()
+        total_score += play_no_print(player)
+    return total_score / i
 
+def main():
+    player = PlayerClass()
+    print("Welcome to Noch Mal")
+    choice = input("Who wants to play? You -> 0 or Computer -> 1\n>")
+    if choice == "0":
+        player.strategy = player.user_input
+        play_and_print(player)
+    elif choice == "1":
+        strategy = input("Choose a strategy: Random -> 0 or Star -> 1 or Columns -> 2\n>")
+        if strategy == "0": player.strategy = player.random_move
+        elif strategy == "1": player.strategy = player.check_star
+        elif strategy == "2": player.strategy = player.check_columns
+        mode = input("Show moves or get average score? Show moves -> 0 average score -> 1\n>")
+        if mode == "0": play_and_print(player)
+        elif mode == "1": print(play_repeat(int(input("How many times to simulate the game?\n>")),player))
 
-
-play(NochMal())
-
-
-
-
-
+if __name__ == "__main__":
+    main()
 
 
