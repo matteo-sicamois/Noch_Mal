@@ -19,6 +19,7 @@ import copy
 import random
 import itertools
 from copy import deepcopy
+import time
 
 class colors:
     PINK = TWO = '\033[95m'
@@ -29,6 +30,16 @@ class colors:
     NORMAL = '\033[0m'
 
 color_list = ['\033[0m','\033[92m','\033[95m','\033[91m','\033[94m','\033[93m']
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        run_time = end_time - start_time
+        print(f"Finished {func.__name__} in {run_time:.4f} secs")
+        return value
+    return wrapper
 
 def visualize_move(board,move):
     print("  ", end="")
@@ -280,7 +291,8 @@ def play_no_print(player):
         player.possible_moves = player.game.get_possible_moves()
     return player.game.get_game_score()
 
-def play_repeat(i, player):
+@timer
+def simulations(i, player):
     total_score = 0
     for instance in range(i):
         player.game = NochMal()
@@ -301,9 +313,7 @@ def main():
         elif strategy == "2": player.strategy = player.check_columns
         mode = input("Show moves or get average score? Show moves -> 0 average score -> 1\n>")
         if mode == "0": play_and_print(player)
-        elif mode == "1": print(play_repeat(int(input("How many times to simulate the game?\n>")),player))
+        elif mode == "1": print("Average score: " + str(simulations(int(input('How many times to simulate the game?\n>')), player)))
 
 if __name__ == "__main__":
     main()
-
-
