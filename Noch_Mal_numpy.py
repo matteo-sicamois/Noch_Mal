@@ -17,7 +17,6 @@ class NochMal:
                                       [5, 5, 4, 4, 4, 4, 3, 5, 5, 1, 1, 1, 1, 2, 2]], dtype = np.int8)
                                       #Green = 1 Pink = 2 Red = 3 Blue = 4 Yellow = 5
                                       #A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
-        self.board=np.array([])
         self.stars = [(0,7),(0,11),(1,2),(1,4),(1,9),(2,0),(2,6),(3,5),(3,13),(5,1),(5,3),(5,8),(5,10),(5,14),(6,12)]
         self.valid = np.zeros((7,15), dtype=np.int8)
         self.valid[:,7] = -1
