@@ -12,7 +12,6 @@ def get_hash(x):
     for i in x:
         h = h*31 + (i+2)
     return h
-print(bin(get_hash((-1,-1,-1,-1))))
 
 @njit
 def insertion_sort(tup, val):
