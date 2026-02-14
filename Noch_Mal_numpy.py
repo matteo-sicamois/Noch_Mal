@@ -1,3 +1,19 @@
+#Noch mal
+#Rules:
+# You roll for dices, 2 for colors and 2 for numbers.
+# You then have to choose 2 of the dices and select the corresponding amount of squares of that color.
+# The squares have to be either in the highlighted column or adjacent to an already occupied square.
+# They all have to touch each others (no diagonals)
+# Completing a column gives a determinate number of points (see score_table of NochMal class)
+# Completing a color gives 5 points
+# Each non-collected star (the rhombuses) removes 2 points at the end of the game.
+# The game ends after 30 rounds
+
+#To select the squares write their coordinates separated by a comma. Separate each square with a space.
+
+#Example:
+# numbers: [2,5] colors: [red, yellow]
+#Enter move: 5,7 5,8
 
 import numpy as np
 import random
@@ -226,4 +242,9 @@ def main(c1=None,c2=None,c3=None,c4=None):
 
 
 if __name__ == "__main__":
-    main(1,2,0, 1)
+    main()
+
+    #c1 you or computer
+    #c2 strategy
+    #c3 show or average
+    #c4 number of games

@@ -1,6 +1,5 @@
 import numpy as np
 from numba import njit
-from numba.core.types import long_
 from numba.typed import List
 import random
 import time
